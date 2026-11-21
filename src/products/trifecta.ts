@@ -29,8 +29,8 @@ export const product: Product = {
   ],
 
   seo: {
-    title: 'Trifecta',
-    description: '[Descripción corta para cuando compartan el link]',
+    title: 'Trifecta | Felipe Riaño',
+    description: 'Mira el video completo antes de que salga del aire.',
     ogImage: '/img/trifecta/og.jpg',
   },
 };

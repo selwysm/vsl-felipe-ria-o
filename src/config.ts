@@ -16,7 +16,9 @@ export const site = {
   brand: 'Felipe Riaño',
   /** Título y descripción de la página raíz (tudominio.com/) */
   title: 'Felipe Riaño',
-  description: '[Descripción de tu marca]',
+  description: 'Mira el video completo y elige tu programa con Felipe Riaño.',
+  /** Imagen al compartir la página raíz */
+  ogImage: '/img/og.jpg',
 };
 
 export const footer = {

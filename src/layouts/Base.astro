@@ -14,7 +14,8 @@ interface Props {
 const { product, video } = Astro.props;
 const title = Astro.props.title ?? product?.seo.title ?? site.title;
 const description = Astro.props.description ?? product?.seo.description ?? site.description;
-const ogImage = Astro.props.ogImage ?? product?.seo.ogImage;
+const ogImage = Astro.props.ogImage ?? product?.seo.ogImage ?? site.ogImage;
+const ogImageUrl = new URL(ogImage, Astro.site ?? Astro.url).toString();
 const vsl = Boolean(product && video);
 const vturbEnabled = Boolean(config.vturbAccountId && (video?.vturb.verticalId || video?.vturb.horizontalId));
 // El botón solo se oculta si hay un video de Vturb que lo controle
@@ -34,10 +35,27 @@ const canonical = canonicalSlug && Astro.site ? new URL(`/${canonicalSlug}`, Ast
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#fff8e6" />
+    <!-- Íconos -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Vista previa al compartir el link (WhatsApp, Facebook, Instagram, X) -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.brand} />
+    <meta property="og:locale" content="es_LA" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    {ogImage && <meta property="og:image" content={new URL(ogImage, Astro.site ?? Astro.url).toString()} />}
+    <meta property="og:url" content={new URL(Astro.url.pathname, Astro.site ?? Astro.url).toString()} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={title} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
     <meta name="robots" content={vsl ? 'index,follow' : 'noindex'} />
     {canonical && <link rel="canonical" href={canonical} />}
 

@@ -29,8 +29,8 @@ export const product: Product = {
   ],
 
   seo: {
-    title: 'Fundamentos',
-    description: '[Descripción corta para cuando compartan el link]',
+    title: 'Fundamentos | Felipe Riaño',
+    description: 'Mira el video completo antes de que salga del aire.',
     ogImage: '/img/fundamentos/og.jpg',
   },
 };
