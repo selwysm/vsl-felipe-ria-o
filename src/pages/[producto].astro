@@ -1,0 +1,26 @@
+---
+/**
+ * Plantilla única: genera una página por cada video de cada producto (src/products/).
+ * Página sencilla: solo el video y, en los últimos segundos, el botón a WhatsApp.
+ */
+import Base from '../layouts/Base.astro';
+import VideoVSL from '../components/VideoVSL.astro';
+import CTAButton from '../components/CTAButton.astro';
+import { pages } from '../products';
+import type { Product, Video } from '../products/types';
+
+export function getStaticPaths() {
+  return pages.map(({ product, video }) => ({ params: { producto: video.slug }, props: { product, video } }));
+}
+
+const { product, video } = Astro.props as { product: Product; video: Video };
+---
+
+<Base product={product} video={video}>
+  <main class="flex-1 flex flex-col items-center justify-center gap-6 px-4 py-8 sm:py-12">
+    <VideoVSL product={product} video={video} />
+    <div class="esconder w-full flex justify-center">
+      <CTAButton id="video" href={product.ctaUrl} label={product.ctaLabel} />
+    </div>
+  </main>
+</Base>

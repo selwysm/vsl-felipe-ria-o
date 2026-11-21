@@ -1,0 +1,125 @@
+---
+/**
+ * Player Vturb:
+ *  - Móvil  (< desktopBreakpoint): player VERTICAL 9:16
+ *  - Desktop (>= desktopBreakpoint): player HORIZONTAL 16:9 (si no está configurado, usa el vertical centrado)
+ * Solo se descarga UN player, el que corresponde a la pantalla.
+ * El botón (.esconder) aparece cuando al video le quedan `ctaSecondsBeforeEnd` segundos,
+ * o en `ctaAtSecond` si ese video lo define.
+ */
+import { config } from '../config';
+import type { Product, Video } from '../products/types';
+
+interface Props { product: Product; video: Video }
+const { product, video } = Astro.props;
+const accountId = config.vturbAccountId;
+const { verticalId, horizontalId } = video.vturb;
+const vturbEnabled = Boolean(accountId && (verticalId || horizontalId));
+---
+
+<div
+  id="vsl"
+  class="vsl mx-auto w-full"
+  data-account={accountId}
+  data-vertical={verticalId}
+  data-horizontal={horizontalId}
+  data-cta-at={video.ctaAtSecond ?? ''}
+  data-before-end={config.ctaSecondsBeforeEnd}
+  data-breakpoint={config.desktopBreakpoint}
+>
+  <div class="vsl-frame relative overflow-hidden bg-black shadow-[0_20px_50px_-20px_rgba(0,0,0,.45)]">
+    {!vturbEnabled && (
+      <div class="absolute inset-0 grid place-items-center p-6 text-center text-cream/80 text-sm leading-relaxed">
+        <div>
+          <p class="font-display text-cream text-lg mb-2">Aquí va tu VSL de Vturb</p>
+          <p>
+            Configura <code class="text-accent">PUBLIC_VTURB_ACCOUNT_ID</code> en Vercel y los IDs de los players en
+            <code class="text-accent">src/products/{product.id}.ts</code> (video <code class="text-accent">{video.slug}</code>)
+          </p>
+        </div>
+      </div>
+    )}
+  </div>
+  <!-- Vturb muestra este elemento en el segundo indicado; lo observamos para mostrar el botón -->
+  <div id="vsl-sentinel" class="vsl-sentinel esconder-vturb"></div>
+</div>
+
+<style>
+  /* Vertical (móvil, o desktop sin player horizontal): que entre en pantalla junto con el botón */
+  .vsl[data-format='v'] { max-width: min(100%, calc((100svh - 230px) * 9 / 16), 400px); }
+  .vsl[data-format='v'] .vsl-frame { aspect-ratio: 9 / 16; }
+  /* Horizontal (desktop) */
+  .vsl[data-format='h'] { max-width: min(100%, 960px, calc((100svh - 230px) * 16 / 9)); }
+  .vsl[data-format='h'] .vsl-frame { aspect-ratio: 16 / 9; }
+  .vsl:not([data-format]) { max-width: 400px; }
+  .vsl:not([data-format]) .vsl-frame { aspect-ratio: 9 / 16; }
+  .vsl-frame :global(vturb-smartplayer) { display: block; width: 100%; height: 100%; }
+</style>
+
+<script>
+  type VturbPlayer = HTMLElement & {
+    currentTime?: number;
+    duration?: number;
+    displayHiddenElements?: (s: number, sel: string[], o?: { persist?: boolean }) => void;
+  };
+
+  const root = document.getElementById('vsl') as HTMLElement;
+  const frame = root.querySelector('.vsl-frame') as HTMLElement;
+  const html = document.documentElement;
+  const { account, vertical, horizontal } = root.dataset;
+  const fixedAt = root.dataset.ctaAt ? Number(root.dataset.ctaAt) : null;
+  const beforeEnd = Number(root.dataset.beforeEnd) || 40;
+  const isDesktop = window.matchMedia(`(min-width: ${root.dataset.breakpoint}px)`).matches;
+
+  // Elige UN solo player según la pantalla
+  const useHorizontal = isDesktop && !!horizontal;
+  const playerId = useHorizontal ? horizontal : vertical || horizontal;
+  root.dataset.format = useHorizontal || (!vertical && horizontal) ? 'h' : 'v';
+
+  function reveal(at: number) {
+    if (html.classList.contains('revealed')) return;
+    html.classList.add('revealed');
+    try { localStorage.setItem(html.dataset.storageKey || 'vsl_revealed', '1'); } catch {}
+    window.fbq?.('trackCustom', 'CTAShown', {
+      product: document.body.dataset.product,
+      video: document.body.dataset.video,
+      seconds: Math.round(at),
+    });
+  }
+
+  if (account && playerId) {
+    // Embed v4 de Vturb
+    const player = document.createElement('vturb-smartplayer') as VturbPlayer;
+    player.id = `vid-${playerId}`;
+    frame.appendChild(player);
+    const s = document.createElement('script');
+    s.src = `https://scripts.converteai.net/${account}/players/${playerId}/v4/player.js`;
+    s.async = true;
+    document.head.appendChild(s);
+
+    if (!html.classList.contains('revealed')) {
+      let showAt: number | null = fixedAt;
+      let armed = false;
+
+      // a) API de Vturb: muestra el centinela en el segundo indicado → mostramos el botón
+      const sentinel = document.getElementById('vsl-sentinel') as HTMLElement;
+      new MutationObserver(() => {
+        if (getComputedStyle(sentinel).display !== 'none') reveal(showAt ?? 0);
+      }).observe(sentinel, { attributes: true, attributeFilter: ['style', 'class'] });
+
+      // b) Cada medio segundo: calcula el momento (duración − 40 s) cuando la duración esté disponible
+      //    y revisa el tiempo actual (respaldo por si la API de Vturb no responde)
+      const timer = window.setInterval(() => {
+        if (html.classList.contains('revealed')) return window.clearInterval(timer);
+        const duration = Number(player.duration) || 0;
+        if (showAt === null && duration > 0) showAt = Math.max(0, duration - beforeEnd);
+        if (showAt === null) return;
+        if (!armed && typeof player.displayHiddenElements === 'function') {
+          armed = true;
+          try { player.displayHiddenElements(showAt, ['#vsl-sentinel'], { persist: true }); } catch {}
+        }
+        if ((Number(player.currentTime) || 0) >= showAt) reveal(showAt);
+      }, 500);
+    }
+  }
+</script>

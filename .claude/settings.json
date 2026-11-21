@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.formatocriativodeconteudo.com)",
+      "Bash(curl -sL -A \"Mozilla/5.0\" https://www.formatocriativodeconteudo.com/ -o ref.html)",
+      "Bash(npm -v)",
+      "Bash(sips -c 2800 820 --cropOffset 0 0 mobile.png --out mob_top.png)",
+      "Bash(sips -c 3000 820 --cropOffset 2800 0 mobile.png --out mob_mid.png)",
+      "Bash(npx astro *)",
+      "Bash(pkill -f \"astro preview\")",
+      "Bash(SITE_URL=https://ejemplo.com npx astro build)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" localhost:4321/trifecta-6m)",
+      "Bash(break)",
+      "Bash(perl -e 'select\\(undef,undef,undef,0.5\\)')",
+      "Bash(open http://localhost:4321/)"
+    ]
+  }
+}

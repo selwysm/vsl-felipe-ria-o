@@ -1,0 +1,27 @@
+---
+/** Raíz del dominio (tudominio.com/). Lista los productos y sus versiones de VSL. No se indexa en Google. */
+import Base from '../layouts/Base.astro';
+import { products } from '../products';
+import { site } from '../config';
+---
+
+<Base title={site.title} description={site.description}>
+  <main class="mx-auto w-full max-w-3xl px-4 py-16 sm:py-24">
+    <h1 class="font-display font-black uppercase text-4xl sm:text-5xl text-center">{site.brand}</h1>
+    <ul class="mt-12 grid gap-6 sm:grid-cols-2">
+      {products.map((p) => (
+        <li class="rounded-2xl border-2 border-ink bg-white p-6 shadow-[6px_6px_0_0_var(--color-ink)]">
+          <p class="font-display font-extrabold uppercase text-2xl text-brand">{p.name}</p>
+          <p class="mt-2 text-ink/70">{p.seo.description}</p>
+          <div class="mt-5 flex flex-wrap gap-2">
+            {p.videos.map((v) => (
+              <a href={`/${v.slug}`} class="rounded-full border-2 border-ink px-4 py-2 font-semibold text-sm uppercase hover:bg-brand hover:text-cream transition">
+                {v.label} →
+              </a>
+            ))}
+          </div>
+        </li>
+      ))}
+    </ul>
+  </main>
+</Base>

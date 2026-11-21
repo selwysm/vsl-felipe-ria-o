@@ -1,0 +1,140 @@
+---
+import '../styles/global.css';
+import { config, site, footer } from '../config';
+import type { Product, Video } from '../products/types';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  /** Producto y video de la VSL. Sin ellos (raíz, páginas legales) no hay video ni botón oculto. */
+  product?: Product;
+  video?: Video;
+}
+const { product, video } = Astro.props;
+const title = Astro.props.title ?? product?.seo.title ?? site.title;
+const description = Astro.props.description ?? product?.seo.description ?? site.description;
+const ogImage = Astro.props.ogImage ?? product?.seo.ogImage;
+const vsl = Boolean(product && video);
+const vturbEnabled = Boolean(config.vturbAccountId && (video?.vturb.verticalId || video?.vturb.horizontalId));
+// El botón solo se oculta si hay un video de Vturb que lo controle
+const gated = vsl && vturbEnabled;
+const storageKey = `vsl_revealed_${video?.slug ?? 'none'}_${video?.vturb.verticalId || video?.vturb.horizontalId || 'local'}`;
+const pixelId = config.metaPixelId;
+// Las versiones alternativas apuntan a la principal para que Google no las vea como contenido duplicado
+const canonicalSlug = product?.videos[0]?.slug;
+const canonical = canonicalSlug && Astro.site ? new URL(`/${canonicalSlug}`, Astro.site).toString() : undefined;
+---
+
+<!doctype html>
+<html lang="es" data-gated={gated ? '1' : '0'} data-storage-key={storageKey}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#fff8e6" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {ogImage && <meta property="og:image" content={new URL(ogImage, Astro.site ?? Astro.url).toString()} />}
+    <meta name="robots" content={vsl ? 'index,follow' : 'noindex'} />
+    {canonical && <link rel="canonical" href={canonical} />}
+
+    <!-- Muestra el botón de inmediato (sin parpadeo) si: ?show=1, ya lo vio antes, o no hay video que lo controle -->
+    <script is:inline>
+      (function () {
+        var d = document.documentElement;
+        var q = new URLSearchParams(location.search);
+        var show = q.get('show') === '1';
+        var seen = false;
+        try {
+          // ?reset=1 olvida que ya vio el botón (útil para probar)
+          if (q.get('reset') === '1') localStorage.removeItem(d.dataset.storageKey);
+          seen = localStorage.getItem(d.dataset.storageKey) === '1';
+        } catch (e) {}
+        if (show || seen || d.dataset.gated !== '1') d.classList.add('revealed');
+      })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=Inter:wght@400;500;600;700&display=swap"
+    />
+    {gated && (
+      <>
+        <link rel="preconnect" href="https://scripts.converteai.net" />
+        <link rel="preconnect" href="https://cdn.converteai.net" />
+      </>
+    )}
+
+    {pixelId && (
+      <script is:inline define:vars={{ pixelId }}>
+        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+        n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+        document,'script','https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', pixelId);
+        fbq('track', 'PageView');
+      </script>
+    )}
+    {pixelId && product && video && (
+      <script is:inline define:vars={{ productId: product.id, videoSlug: video.slug }}>
+        fbq('trackCustom', 'VSLView', { product: productId, video: videoSlug });
+      </script>
+    )}
+  </head>
+  <body class="min-h-svh flex flex-col antialiased" data-product={product?.id} data-video={video?.slug}>
+    {pixelId && (
+      <noscript>
+        <img height="1" width="1" style="display:none" alt="" src={`https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`} />
+      </noscript>
+    )}
+    <slot />
+
+    <footer class="bg-ink text-cream text-center text-xs sm:text-sm px-4 py-4">
+      <p>{footer.copyright}</p>
+      <p class="mt-1 space-x-3 text-cream/50 text-[11px]">
+        <a href="/privacidad" class="hover:text-cream">Privacidad</a>
+        <a href="/terminos" class="hover:text-cream">Términos</a>
+      </p>
+    </footer>
+
+    <script>
+      // 1) Guarda UTMs / fbclid / src / sck de la URL (se pasan a links de checkout, no a WhatsApp)
+      const PASS = /^(utm_|src$|sck$|xcod$|fbclid$|gclid$|ttclid$)/;
+      const KEY = 'vsl_params';
+      const incoming = new URLSearchParams(location.search);
+      let params: Record<string, string> = {};
+      try { params = JSON.parse(sessionStorage.getItem(KEY) || '{}'); } catch {}
+      incoming.forEach((v, k) => { if (PASS.test(k)) params[k] = v; });
+      if (!params.sck && params.utm_source) {
+        params.sck = [params.utm_source, params.utm_campaign, params.utm_content].filter(Boolean).join('|');
+      }
+      try { sessionStorage.setItem(KEY, JSON.stringify(params)); } catch {}
+
+      document.querySelectorAll<HTMLAnchorElement>('a[data-cta]').forEach((a) => {
+        if (!a.href || a.getAttribute('href') === '#') return;
+        const url = new URL(a.href);
+        const isWhatsApp = /(^|\.)(wa\.link|wa\.me|whatsapp\.com)$/.test(url.hostname);
+        // Solo los checkouts (Hotmart, etc.) reciben las UTMs; wa.link es un acortador y no las transmite
+        if (!isWhatsApp) {
+          Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+          a.href = url.toString();
+        }
+        // 2) Evento del pixel: "Contact" para WhatsApp, "InitiateCheckout" para checkouts
+        a.addEventListener('click', () => {
+          window.fbq?.('track', isWhatsApp ? 'Contact' : 'InitiateCheckout', {
+            content_ids: [document.body.dataset.product],
+            content_name: document.body.dataset.product,
+            video: document.body.dataset.video,
+            button: a.dataset.cta,
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
