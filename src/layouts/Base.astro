@@ -35,6 +35,7 @@ const canonical = canonicalSlug && Astro.site ? new URL(`/${canonicalSlug}`, Ast
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#fff8e6" />
+    {vsl && <meta name="theme-color" media="(max-width: 1023px)" content="#141210" />}
     <!-- Íconos -->
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -105,7 +106,7 @@ const canonical = canonicalSlug && Astro.site ? new URL(`/${canonicalSlug}`, Ast
       </script>
     )}
   </head>
-  <body class="min-h-svh flex flex-col antialiased" data-product={product?.id} data-video={video?.slug}>
+  <body class:list={['min-h-svh flex flex-col antialiased', vsl && 'vsl-page']} data-product={product?.id} data-video={video?.slug}>
     {pixelId && (
       <noscript>
         <img height="1" width="1" style="display:none" alt="" src={`https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`} />

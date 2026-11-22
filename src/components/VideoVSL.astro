@@ -27,7 +27,7 @@ const vturbEnabled = Boolean(accountId && (verticalId || horizontalId));
   data-before-end={config.ctaSecondsBeforeEnd}
   data-breakpoint={config.desktopBreakpoint}
 >
-  <div class="vsl-frame relative overflow-hidden bg-black shadow-[0_20px_50px_-20px_rgba(0,0,0,.45)]">
+  <div class="vsl-frame relative overflow-hidden bg-black lg:shadow-[0_20px_50px_-20px_rgba(0,0,0,.45)]">
     {!vturbEnabled && (
       <div class="absolute inset-0 grid place-items-center p-6 text-center text-cream/80 text-sm leading-relaxed">
         <div>
@@ -45,13 +45,17 @@ const vturbEnabled = Boolean(accountId && (verticalId || horizontalId));
 </div>
 
 <style>
-  /* Vertical (móvil, o desktop sin player horizontal): que entre en pantalla junto con el botón */
-  .vsl[data-format='v'] { max-width: min(100%, calc((100svh - 230px) * 9 / 16), 400px); }
+  /* Vertical en móvil: lo más grande posible, dejando solo el espacio del botón (~110px) */
+  .vsl[data-format='v'], .vsl:not([data-format]) { max-width: min(100%, calc((100svh - 110px) * 9 / 16)); }
   .vsl[data-format='v'] .vsl-frame { aspect-ratio: 9 / 16; }
+  /* Vertical en desktop sin player horizontal: centrado y con tope de 400px */
+  @media (min-width: 1024px) {
+    .vsl[data-format='v'] { max-width: min(100%, calc((100svh - 230px) * 9 / 16), 400px); }
+    .vsl:not([data-format]) { max-width: 400px; }
+  }
   /* Horizontal (desktop) */
   .vsl[data-format='h'] { max-width: min(100%, 960px, calc((100svh - 230px) * 16 / 9)); }
   .vsl[data-format='h'] .vsl-frame { aspect-ratio: 16 / 9; }
-  .vsl:not([data-format]) { max-width: 400px; }
   .vsl:not([data-format]) .vsl-frame { aspect-ratio: 9 / 16; }
   .vsl-frame :global(vturb-smartplayer) { display: block; width: 100%; height: 100%; }
 </style>

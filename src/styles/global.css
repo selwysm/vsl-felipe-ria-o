@@ -16,6 +16,11 @@
 html { background: var(--color-cream); color: var(--color-ink); -webkit-text-size-adjust: 100%; overflow-x: clip; }
 body { font-family: var(--font-sans); background: var(--color-cream); overflow-x: clip; }
 
+/* Página del VSL en móvil: fondo oscuro para que el video se integre con la pantalla */
+@media (max-width: 1023.98px) {
+  html:has(body.vsl-page), body.vsl-page { background: var(--color-ink); color: var(--color-cream); }
+}
+
 /* Botón oculto hasta los últimos segundos del video.
    Se usa visibility (no display) para reservar su espacio y que el video no salte al aparecer. */
 html:not(.revealed) .esconder { visibility: hidden; opacity: 0; pointer-events: none; }
